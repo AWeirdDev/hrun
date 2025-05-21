@@ -3,7 +3,7 @@ requires = ["maturin>=1.8,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "hrun"
+name = "hrun-rt"
 description = "H is a simple runtime designed to be fast and memory-safe."
 requires-python = ">=3.8"
 classifiers = [
