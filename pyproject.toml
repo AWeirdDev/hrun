@@ -5,6 +5,8 @@ build-backend = "maturin"
 [project]
 name = "hrun-rt"
 description = "H is a simple runtime designed to be fast and memory-safe."
+license = { file = "LICENSE" }
+dependencies = []
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
@@ -12,10 +14,16 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+
+[project.urls]
+"Source" = "https://github.com/AWeirdDev/hrun"
+"Issues" = "https://github.com/AWeirdDev/hrun/issues"
+
 [project.optional-dependencies]
 tests = [
     "pytest",
 ]
+
 [tool.maturin]
 python-source = "python"
 features = ["pyo3/extension-module"]
