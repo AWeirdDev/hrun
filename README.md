@@ -2,7 +2,7 @@
 
 ![Rust](https://img.shields.io/badge/Rust-%23000000.svg?logo=rust&logoColor=white)
 
-![PyPI Downloads (weekly)](https://badgen.net/pypi/dw/hrun)
+![PyPI Downloads (weekly)](https://badgen.net/pypi/dw/hrun-rt)
 ![Contributors](https://badgen.net/github/contributors/AWeirdDev/hrun)
 ![Release](https://badgen.net/github/release/AWeirdDev/hrun)
 
