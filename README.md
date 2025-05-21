@@ -1,4 +1,11 @@
 # 🚁 hrun
+
+![Rust](https://img.shields.io/badge/Rust-%23000000.svg?logo=rust&logoColor=white)
+
+![PyPI Downloads (weekly)](https://badgen.net/pypi/dw/hrun)
+![Contributors](https://badgen.net/github/contributors/AWeirdDev/hrun)
+![Release](https://badgen.net/github/release/AWeirdDev/hrun)
+
 **`H`** is a simple runtime designed to be fast and memory-safe.
 
 You may find it useful for:
