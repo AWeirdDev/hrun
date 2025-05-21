@@ -1,0 +1,18 @@
+[package]
+name = "hrun"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "hrun"
+crate-type = ["cdylib"]
+
+[workspace]
+members = [
+    "crates/h"
+]
+
+[dependencies]
+pyo3 = "0.24.0"
+h = { path = "crates/h" }
