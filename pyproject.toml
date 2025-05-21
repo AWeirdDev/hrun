@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "hrun"
+description = "H is a simple runtime designed to be fast and memory-safe."
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
