@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Callable, List, Literal
 from .types import Identifier, Value
 
 
@@ -98,6 +98,26 @@ class Expr:
             b (Expr): An expression. Must be a number.
         """
 
+    @staticmethod
+    def call(ident: Identifier, args: Expr) -> "Expr":
+        """Creates an expression that calls a function.
+
+        Args:
+            ident (Identifier): The identifier.
+            args (Expr): Arguments (parameters).
+        """
+
+    @staticmethod
+    def vector(items: List[Expr]) -> "Expr":
+        """Creates a vector.
+
+        In other words, this is like a bracket which creates a list of expressions,
+        like so: `[expr_1, expr_2, expr_3, ...]`
+
+        Args:
+            items (list[Expr]): Expression items.
+        """
+
 
 class Statement:
     """Represents a statement."""
@@ -125,3 +145,6 @@ class Statement:
             then (list[Statement]): The `if [...] then...` branch.
             otheriwse (list[Statement]): The `...else` branch.
         """
+
+    @staticmethod
+    def fn(ident: Identifier, item: Callable[[Value], Value]): ...

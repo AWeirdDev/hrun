@@ -1,16 +1,77 @@
-use std::sync::Arc;
+use std::{ fmt::Debug, sync::Arc };
 
 use dashmap::DashMap;
 
-#[derive(Debug, Clone, PartialEq)]
+pub trait HFunction: HFunctionClone + Debug + Send + Sync {
+    fn run(&self, args: Arc<Value>) -> Value;
+}
+
+pub trait HFunctionClone {
+    fn clone_box(&self) -> Box<dyn HFunction>;
+}
+
+impl<T> HFunctionClone for T where T: 'static + HFunction + Clone {
+    fn clone_box(&self) -> Box<dyn HFunction> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn HFunction> {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+pub type BoxedHFunction = Box<dyn HFunction + 'static>;
+
+#[derive(Debug, Clone)]
 pub enum Value {
     Null,
     Boolean(bool),
     String(String),
     Number(Number),
+    Vector(Vec<Arc<Value>>),
+    Function(BoxedHFunction),
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Self::Function(_) => panic!("Cannot perform PartialEq for Value::Fn"),
+            Self::Boolean(b) =>
+                b.eq(
+                    other
+                        .as_bool()
+                        .unwrap_or_else(|| panic!("Expected other item to be Value::Boolean"))
+                ),
+            Self::Null => other.is_null(),
+            Self::Number(n) =>
+                n.eq(
+                    other
+                        .as_number()
+                        .unwrap_or_else(|| panic!("Expected other item to be Value::Number"))
+                ),
+            Self::String(s) =>
+                s.eq(
+                    other
+                        .as_string()
+                        .unwrap_or_else(|| panic!("Expected other item to be Value::String"))
+                ),
+            Self::Vector(v) =>
+                v.eq(
+                    other
+                        .as_vector()
+                        .unwrap_or_else(|| panic!("Expected other item to be Value::Vector"))
+                ),
+        }
+    }
 }
 
 impl Value {
+    pub fn is_null(&self) -> bool {
+        matches!(self, Self::Null)
+    }
+
     pub fn is_number(&self) -> bool {
         matches!(self, Self::Number(_))
     }
@@ -40,6 +101,28 @@ impl Value {
     pub fn as_bool(&self) -> Option<&bool> {
         match self {
             Self::Boolean(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    pub fn is_function(&self) -> bool {
+        matches!(self, Self::Function(_))
+    }
+
+    pub fn as_function(&self) -> Option<&BoxedHFunction> {
+        match self {
+            Self::Function(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    pub fn is_vector(&self) -> bool {
+        matches!(self, Self::Vector(_))
+    }
+
+    pub fn as_vector(&self) -> Option<&Vec<Arc<Self>>> {
+        match self {
+            Self::Vector(v) => Some(v),
             _ => None,
         }
     }
@@ -128,6 +211,8 @@ pub enum Expr {
     Not(Box<Expr>),
     GreaterThan(Box<Expr>, Box<Expr>),
     LessThan(Box<Expr>, Box<Expr>),
+    Call(Identifier, Box<Expr>),
+    Vector(Vec<Expr>),
 }
 
 impl Expr {
@@ -152,6 +237,7 @@ impl Expr {
     }
 
     /// Creates a not expr
+    #[allow(clippy::should_implement_trait)]
     pub fn not(item: Self) -> Self {
         Self::Not(Box::new(item))
     }
@@ -164,6 +250,16 @@ impl Expr {
     /// Creates a less than expr
     pub fn less_than(a: Self, b: Self) -> Self {
         Self::LessThan(Box::new(a), Box::new(b))
+    }
+
+    /// Calls a function
+    pub fn call(ident: Identifier, args: Self) -> Self {
+        Self::Call(ident, Box::new(args))
+    }
+
+    /// Creates a vector (i.e. `[expr_1, expr_2, expr_3, ...]`)
+    pub fn vector(items: Vec<Self>) -> Self {
+        Self::Vector(items)
     }
 }
 
@@ -212,11 +308,18 @@ pub enum Statement {
         then: Vec<Statement>,
         otherwise: Vec<Statement>, // are you expecting "else"?? nahhh
     },
+    Fn(Identifier, BoxedHFunction),
 }
 
 #[derive(Debug)]
 pub struct Machine {
     pub vars: DashMap<Identifier, Arc<Value>>,
+}
+
+impl Default for Machine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Machine {
@@ -231,7 +334,10 @@ impl Machine {
     }
 
     pub fn get(&self, ident: &Identifier) -> Arc<Value> {
-        self.vars.get(ident).expect(&format!("Value cannot be found: {:?}", ident)).clone()
+        self.vars
+            .get(ident)
+            .unwrap_or_else(|| panic!("Value cannot be found: {:?}", ident))
+            .clone()
     }
 }
 
@@ -251,6 +357,9 @@ pub fn deduce(machine: &Machine, statements: Vec<Statement>) {
                 } else {
                     deduce(machine, otherwise);
                 }
+            }
+            Statement::Fn(ident, function) => {
+                machine.set(ident, Arc::new(Value::Function(function)));
             }
         }
     }
@@ -326,6 +435,21 @@ pub fn deduce_expr(machine: &Machine, expr: Expr) -> Arc<Value> {
                 std::cmp::Ordering::Less => Arc::new(Value::boolean(true)),
                 _ => Arc::new(Value::boolean(false)),
             }
+        }
+        Expr::Call(ident, args) => {
+            let va = deduce_expr(machine, *args);
+            let function = machine.get(&ident);
+            let function = function.as_function().unwrap();
+
+            let result = function.run(va);
+            Arc::new(result)
+        }
+        Expr::Vector(mut v) => {
+            let items = v
+                .drain(..)
+                .map(|item| deduce_expr(machine, item))
+                .collect::<Vec<_>>();
+            Arc::new(Value::Vector(items))
         }
     }
 }
