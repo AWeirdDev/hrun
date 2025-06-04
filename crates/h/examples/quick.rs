@@ -1,7 +1,7 @@
-use h::{ deduce, ident, literal, BinaryOperator, Expr, Machine, Statement, Value };
+use h::{ deduce, ident, literal, BinaryOperator, Expr, Scope, Statement, Value };
 
 fn main() {
-    let machine = Machine::new();
+    let machine = Scope::new();
     let code = vec![
         Statement::Let(
             ident(1),

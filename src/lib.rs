@@ -8,7 +8,7 @@ use h::{
     HFunction,
     HFunctionClone,
     Identifier,
-    Machine,
+    Scope,
     Number,
     Statement,
     Value,
@@ -241,14 +241,14 @@ impl PyExpr {
 
 #[pyclass(name = "H")]
 struct PyH {
-    machine: Machine,
+    machine: Scope,
 }
 
 #[pymethods]
 impl PyH {
     #[new]
     fn py_new() -> Self {
-        Self { machine: Machine::new() }
+        Self { machine: Scope::new() }
     }
 
     fn run(&self, mut stmts: Vec<PyStatement>) {

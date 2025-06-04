@@ -312,20 +312,29 @@ pub enum Statement {
 }
 
 #[derive(Debug)]
-pub struct Machine {
+pub struct Scope {
     pub vars: DashMap<Identifier, Arc<Value>>,
+    pub outer: Option<Arc<Scope>>,
 }
 
-impl Default for Machine {
+impl Default for Scope {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Machine {
+impl Scope {
     pub fn new() -> Self {
         Self {
             vars: DashMap::new(),
+            outer: None,
+        }
+    }
+
+    pub fn new_scope(self) -> Self {
+        Self {
+            vars: DashMap::new(),
+            outer: Some(Arc::new(self)),
         }
     }
 
@@ -334,14 +343,19 @@ impl Machine {
     }
 
     pub fn get(&self, ident: &Identifier) -> Arc<Value> {
-        self.vars
-            .get(ident)
-            .unwrap_or_else(|| panic!("Value cannot be found: {:?}", ident))
-            .clone()
+        if let Some(v) = self.vars.get(ident) {
+            v.clone()
+        } else {
+            if let Some(o) = &self.outer {
+                o.get(ident)
+            } else {
+                panic!("Value cannot be found: {:?}", ident);
+            }
+        }
     }
 }
 
-pub fn deduce(machine: &Machine, statements: Vec<Statement>) {
+pub fn deduce(machine: &Scope, statements: Vec<Statement>) {
     for stmt in statements {
         match stmt {
             Statement::Let(ident, expr) => {
@@ -365,7 +379,7 @@ pub fn deduce(machine: &Machine, statements: Vec<Statement>) {
     }
 }
 
-pub fn deduce_expr(machine: &Machine, expr: Expr) -> Arc<Value> {
+pub fn deduce_expr(machine: &Scope, expr: Expr) -> Arc<Value> {
     match expr {
         Expr::Ident(ident) => { machine.get(&ident) }
         Expr::Literal(lit) => { Arc::new(lit) }
